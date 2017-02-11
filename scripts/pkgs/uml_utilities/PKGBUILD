@@ -15,6 +15,7 @@ license=('GPL2')
 md5sums=('b0468ac8b79cef53f36f5f9517907462')
 
 prepare() {
+  rm -f $(readlink ${pkgname}_${pkgver}.tar.bz2)
   cd "$srcdir/tools-$pkgver"
   sed 's|lib64|lib|g' -i Makefile || return 3
 }
