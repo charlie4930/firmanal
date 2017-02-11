@@ -14,7 +14,7 @@ source=(${pkgname}-${pkgver}.tar.gz::https://storage.googleapis.com/google-code-
 sha512sums=('a5261935e42446568c0c0d4c4fc1beff18c5aa7b85b1aa3398dfeaf80c8bdbb4fb2a6fb4945defc29599d6e58f1553e80e8bb755da4d98f79e99447f0c3414b1')
 
 prepare() {
-  rm -f ${pkgname}-${pkgver}.tar.gz $(readlink ${pkgname}-${pkgver}.tar.gz)
+  rm -f $(readlink ${pkgname}-${pkgver}.tar.gz)
   cd fmk/src
   sed -r 's|(/usr/bin/env) python|\1 python2|g' -i binwalk-1.0/src/bin/binwalk-script
 }
