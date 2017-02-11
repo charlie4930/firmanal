@@ -1,6 +1,6 @@
 diff -aur afl-2.39b.orig/Makefile afl-2.39b/Makefile
 --- afl-2.39b.orig/Makefile	2017-01-15 09:50:54.000000000 +0800
-+++ afl-2.39b/Makefile	2017-02-10 03:17:44.360000001 +0800
++++ afl-2.39b/Makefile	2017-02-11 17:12:05.606666665 +0800
 @@ -122,7 +122,7 @@
  	rm -f $${DESTDIR}$(BIN_PATH)/afl-plot.sh
  	install -m 755 $(PROGS) $(SH_PROGS) $${DESTDIR}$(BIN_PATH)
@@ -12,7 +12,7 @@ diff -aur afl-2.39b.orig/Makefile afl-2.39b/Makefile
  else
 diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/build_qemu_support.sh
 --- afl-2.39b.orig/qemu_mode/build_qemu_support.sh	2016-03-08 15:10:20.000000000 +0800
-+++ afl-2.39b/qemu_mode/build_qemu_support.sh	2017-02-10 03:18:41.110000000 +0800
++++ afl-2.39b/qemu_mode/build_qemu_support.sh	2017-02-11 17:12:45.979999997 +0800
 @@ -1,4 +1,4 @@
 -#!/bin/sh
 +#!/bin/bash
@@ -44,7 +44,7 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
    rm -f "$ARCHIVE"
    wget -O "$ARCHIVE" -- "$QEMU_URL" || exit 1
  
-@@ -110,36 +105,28 @@
+@@ -110,36 +105,31 @@
  
  echo "[*] Uncompressing archive (this will take a while)..."
  
@@ -75,7 +75,9 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
 +cd qemu-2.8.0 || exit 1
  
 -cd qemu-2.3.0 || exit 1
--
++CC=gcc
++CXX=g++
+ 
 -CFLAGS="-O3" ./configure --disable-system --enable-linux-user \
 -  --enable-guest-base --disable-gtk --disable-sdl --disable-vnc \
 -  --target-list="${CPU_TARGET}-linux-user" || exit 1
@@ -90,7 +92,7 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
  
  make || exit 1
  
-@@ -147,50 +134,46 @@
+@@ -147,50 +137,46 @@
  
  echo "[*] Copying binary..."
  
@@ -115,45 +117,45 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
 -  cd ..
 -
 -  make >/dev/null || exit 1
+-
+-  gcc test-instr.c -o test-instr || exit 1
 +echo "[*] Testing the build..."
  
--  gcc test-instr.c -o test-instr || exit 1
--
 -  unset AFL_INST_RATIO
--
--  echo 0 | ./afl-showmap -m none -Q -q -o .test-instr0 ./test-instr || exit 1
--  echo 1 | ./afl-showmap -m none -Q -q -o .test-instr1 ./test-instr || exit 1
 +cd ..
  
--  rm -f test-instr
+-  echo 0 | ./afl-showmap -m none -Q -q -o .test-instr0 ./test-instr || exit 1
+-  echo 1 | ./afl-showmap -m none -Q -q -o .test-instr1 ./test-instr || exit 1
 +make >/dev/null || exit 1
+ 
+-  rm -f test-instr
++gcc test-instr.c -o test-instr || exit 1
  
 -  cmp -s .test-instr0 .test-instr1
 -  DR="$?"
-+gcc test-instr.c -o test-instr || exit 1
- 
--  rm -f .test-instr0 .test-instr1
 +unset AFL_INST_RATIO
  
--  if [ "$DR" = "0" ]; then
+-  rm -f .test-instr0 .test-instr1
 +echo 0 | ./afl-showmap -m none -Q -q -o .test-instr0 ./test-instr || exit 1
 +echo 1 | ./afl-showmap -m none -Q -q -o .test-instr1 ./test-instr || exit 1
  
--    echo "[-] Error: afl-qemu-trace instrumentation doesn't seem to work!"
--    exit 1
+-  if [ "$DR" = "0" ]; then
 +rm -f test-instr
  
--  fi
+-    echo "[-] Error: afl-qemu-trace instrumentation doesn't seem to work!"
+-    exit 1
 +cmp -s .test-instr0 .test-instr1
 +DR="$?"
  
--  echo "[+] Instrumentation tests passed. "
--  echo "[+] All set, you can now use the -Q mode in afl-fuzz!"
+-  fi
 +rm -f .test-instr0 .test-instr1
  
--else
+-  echo "[+] Instrumentation tests passed. "
+-  echo "[+] All set, you can now use the -Q mode in afl-fuzz!"
 +if [ "$DR" = "0" ]; then
  
+-else
+-
 -  echo "[!] Note: can't test instrumentation when CPU_TARGET set."
 -  echo "[+] All set, you can now (hopefully) use the -Q mode in afl-fuzz!"
 +  echo "[-] Error: afl-qemu-trace instrumentation doesn't seem to work!"
@@ -167,7 +169,7 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
  exit 0
 diff -aur afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h
 --- afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h	2016-02-21 06:22:07.000000000 +0800
-+++ afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h	2017-02-10 03:17:44.360000001 +0800
++++ afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h	2017-02-11 17:12:05.606666665 +0800
 @@ -49,7 +49,7 @@
  #define AFL_QEMU_CPU_SNIPPET2 do { \
      if(tb->pc == afl_entry_point) { \
@@ -227,7 +229,7 @@ diff -aur afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h afl-2.39b/qemu_mod
  
 diff -aur afl-2.39b.orig/types.h afl-2.39b/types.h
 --- afl-2.39b.orig/types.h	2016-08-03 02:35:04.000000000 +0800
-+++ afl-2.39b/types.h	2017-02-10 03:17:44.360000001 +0800
++++ afl-2.39b/types.h	2017-02-11 17:12:05.606666665 +0800
 @@ -76,7 +76,9 @@
  #define MEM_BARRIER() \
    asm volatile("" ::: "memory")
