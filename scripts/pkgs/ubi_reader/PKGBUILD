@@ -10,7 +10,7 @@ arch=('i686' 'x86_64')
 url="https://github.com/jrspruitt/ubi_reader"
 license=('GPL3')
 depends=('python2' 'python2-lzo')
-makedepends=('git')
+makedepends=('git' 'python2-setuptools')
 source=("git://github.com/jrspruitt/ubi_reader.git")
 md5sums=('SKIP')
 
