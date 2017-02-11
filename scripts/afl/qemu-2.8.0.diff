@@ -1,6 +1,6 @@
 diff -aur qemu-2.8.0.orig/cpu-exec.c qemu-2.8.0/cpu-exec.c
---- qemu-2.8.0.orig/cpu-exec.c	2017-02-09 23:20:41.023333334 +0800
-+++ qemu-2.8.0/cpu-exec.c	2017-02-09 23:20:04.429999980 +0800
+--- qemu-2.8.0.orig/cpu-exec.c	2016-12-21 04:16:44.000000000 +0800
++++ qemu-2.8.0/cpu-exec.c	2017-02-11 16:47:12.746666667 +0800
 @@ -34,6 +34,8 @@
  #endif
  #include "sysemu/replay.h"
@@ -10,15 +10,6 @@ diff -aur qemu-2.8.0.orig/cpu-exec.c qemu-2.8.0/cpu-exec.c
  /* -icount align implementation. */
  
  typedef struct SyncClocks {
-#@@ -290,7 +292,7 @@
-#     return false;
-# }
-# 
-#-static TranslationBlock *tb_htable_lookup(CPUState *cpu,
-#+TranslationBlock *tb_htable_lookup(CPUState *cpu,
-#                                           target_ulong pc,
-#                                           target_ulong cs_base,
-#                                           uint32_t flags)
 @@ -344,6 +346,7 @@
              if (!tb) {
                  /* if no translated code available, then translate it now */
@@ -36,8 +27,8 @@ diff -aur qemu-2.8.0.orig/cpu-exec.c qemu-2.8.0/cpu-exec.c
                  /* Try to align the host and virtual clocks
                     if the guest is in advance */
 diff -aur qemu-2.8.0.orig/linux-user/elfload.c qemu-2.8.0/linux-user/elfload.c
---- qemu-2.8.0.orig/linux-user/elfload.c	2017-02-09 23:20:41.183333333 +0800
-+++ qemu-2.8.0/linux-user/elfload.c	2017-02-09 23:26:43.109999968 +0800
+--- qemu-2.8.0.orig/linux-user/elfload.c	2016-12-21 04:16:48.000000000 +0800
++++ qemu-2.8.0/linux-user/elfload.c	2017-02-11 16:47:12.750000000 +0800
 @@ -20,6 +20,8 @@
  
  #define ELF_OSABI   ELFOSABI_SYSV
