@@ -33,7 +33,7 @@ sudo pacman -U --needed --noconfirm ${SCRIPT_DIR}/pkgs/*/*.pkg.tar.xz
 
 ## Metasploit Framework
 sudo pacman -S --needed --noconfirm metasploit
-export PATH="$PATH:$(ruby -e 'print Gem.user_dir')/bin"
+export PATH="$PATH:$(ruby-2.3 -e 'print Gem.user_dir')/bin"
 sudo chown -R ${USER} /opt/metasploit
 cd /opt/metasploit
 sudo gem update --system
