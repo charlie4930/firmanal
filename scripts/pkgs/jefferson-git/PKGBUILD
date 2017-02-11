@@ -2,7 +2,7 @@
 
 pkgname=jefferson-git
 _gitname=jefferson
-pkgver=0.2.r9.g78da2e6
+pkgver=0.2.r17.g6f9169b
 pkgrel=1
 pkgdesc="JFFS2 filesystem extraction tool"
 url="https://github.com/sviehb/jefferson"
