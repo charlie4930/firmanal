@@ -29,7 +29,7 @@ sudo -u postgres psql -d firmware < ${DB_DIR}/schema
 
 ## install dependencies
 sudo pacman -S --needed --noconfirm bc fakeroot curl git openbsd-netcat nmap net-snmp util-linux fuse binwalk python-crypto python-capstone squashfs-tools python-magic python-psycopg2 qemu qemu-arch-extra mtd-utils tar unrar xz gzip bzip2 p7zip arj lhasa cabextract arj cpio python-opengl sleuthkit busybox
-sudo pacman -U --needed --noconfirm ./pkgs/*/*.pkg.tar.xz
+sudo pacman -U --needed --noconfirm ${SCRIPT_DIR}/pkgs/*/*.pkg.tar.xz
 
 ## Metasploit Framework
 sudo pacman -S --needed --noconfirm metasploit
