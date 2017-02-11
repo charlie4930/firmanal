@@ -34,7 +34,7 @@ sudo pacman -U --needed --noconfirm ${SCRIPT_DIR}/pkgs/*/*.pkg.tar.xz
 ## Metasploit Framework
 sudo pacman -S --needed --noconfirm metasploit
 export PATH="$PATH:$(ruby-2.3 -e 'print Gem.user_dir')/bin"
-sudo chown -R ${USER} /opt/metasploit
+sudo chown -R ${USER} /opt/metasploit /opt/ruby2.3
 cd /opt/metasploit
 sudo gem-2.3 update --system
 gem-2.3 install bundler
