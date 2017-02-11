@@ -39,7 +39,7 @@ cd /opt/metasploit
 sudo gem-2.3 update --system
 gem-2.3 install bundler
 sudo chown -R ${USER} /opt/ruby2.3
-bundler install
+bundle-2.3 install
 cd -
 sudo -u postgres createuser metasploit -s
 sudo -u postgres createdb -O metasploit -U metasploit msf
