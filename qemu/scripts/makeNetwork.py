@@ -203,7 +203,7 @@ def findVlanInfoForDev(data, dev):
 
 def ifaceNo(dev):
     g = re.match(r"[^0-9]+([0-9]+)", dev)
-    return int(g.group(1))
+    return int(g.group(1)) if g else -1
 
 def qemuNetworkConfig(dev, mac):
     result = ""
@@ -263,11 +263,10 @@ def qemuCmd(iid, network, arch, endianness, cate):
         qemuDisk = "-drive if=ide,format=raw,file=${IMAGE}"
         if endianness != "eb" and endianness != "el":
             raise Exception("You didn't specify a valid endianness")
-
     elif arch == "arm":
         qemuDisk = "-drive if=none,file=${IMAGE},format=raw,id=rootfs -device virtio-blk-device,drive=rootfs"
         if endianness == "el":
-            qemuEnvVars = "QEMU_AUDIO_DRV=none "
+            qemuEnvVars = "QEMU_AUDIO_DRV=none"
         elif endianness == "eb":
             raise Exception("armeb currently not supported")
         else:
@@ -297,7 +296,7 @@ def qemuCmd(iid, network, arch, endianness, cate):
 def process(infile, iid, arch, endianness=None, makeQemuCmd=False, outfile_run=None, outfile_terminate=None):
     brifs = []
     vlans = []
-    data = open(infile).read()
+    data = open(infile, errors='ignore').read()
     network = set()
     success = False
 
