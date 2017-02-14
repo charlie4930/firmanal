@@ -10,9 +10,8 @@ import os
 
 debug = 0
 
-QEMURUNTEMPLATE = """#!/bin/bash
+QEMUCMDTEMPLATE = """#!/bin/bash
 
-set -e
 set -u
 
 ARCHEND=%(ARCHEND)s
@@ -24,6 +23,8 @@ elif [[ -e ../configure.sh ]]; then
     . ../configure.sh
 elif [[ -e ../../configure.sh ]]; then
     . ../../configure.sh
+elif [[ -e ../../../configure.sh ]]; then
+    . ../../../configure.sh
 else
     echo "Error: Could not find 'configure.sh'!"
     exit 1
@@ -38,42 +39,19 @@ WORK_DIR=`get_vm ${IID}`
 
 %(START_NET)s
 
-echo -n "Starting emulation of firmware... "
+function cleanup {
+    pkill -P $$
+    %(STOP_NET)s
+}
+
+trap cleanup EXIT
+
+echo "Starting firmware emulation... use Ctrl-a + x to exit"
+
 %(QEMU_ENV_VARS)s ${QEMU} -m 256 -M ${QEMU_MACHINE} -kernel ${KERNEL} \\
     %(QEMU_DISK)s -append "root=${QEMU_ROOTFS} console=ttyS0 nandsim.parts=64,64,64,64,64,64,64,64,64,64 rdinit=/firmadyne/preInit.sh rw debug ignore_loglevel print-fatal-signals=1 user_debug=31 firmadyne.syscall=0" \\
     -nographic \\
     %(QEMU_NETWORK)s | tee ${WORK_DIR}/qemu.final.serial.log
-
-echo "Done!"
-"""
-
-QEMUTERMINATETEMPLATE = """#!/bin/bash
-
-set -u
-
-ARCHEND=%(ARCHEND)s
-IID=%(IID)i
-
-if [[ -e ./configure.sh ]]; then
-    . ./configure.sh
-elif [[ -e ../configure.sh ]]; then
-    . ../configure.sh
-elif [[ -e ../../configure.sh ]]; then
-    . ../../configure.sh
-else
-    echo "Error: Could not find 'configure.sh'!"
-    exit 1
-fi
-
-IMAGE=`get_fs ${IID}`
-KERNEL=`get_kernel ${ARCHEND}`
-QEMU=`get_qemu ${ARCHEND}`
-QEMU_MACHINE=`get_qemu_machine ${ARCHEND}`
-QEMU_ROOTFS=`get_qemu_disk ${ARCHEND}`
-WORK_DIR=`get_vm ${IID}`
-
-killall ${QEMU}
-%(STOP_NET)s
 
 echo "Done!"
 """
@@ -225,45 +203,6 @@ def getIP(ip):
         tups[3] = 2
     return ".".join([str(x) for x in tups])
 
-"""
-echo "Creating TAP device ${TAPDEV}..."
-[[ -z "$(ip link | grep ${TAPDEV})" ]] && \\
-    tunctl -t ${TAPDEV}
-
-if [[ ${HASVLAN} -ne 0 ]]; then
-    echo "Initializing VLAN..."
-    HOSTNETDEV=${TAPDEV}.${VLANID}
-    [[ -z "$(ip link | grep ${HOSTNETDEV}@${TAPDEV})" ]] && \\
-        ip link add link ${TAPDEV} name ${HOSTNETDEV} type vlan id ${VLANID} && sleep 1
-    ip link set ${HOSTNETDEV} up
-fi
-
-echo "Bringing up TAP device..."
-ip link set ${HOSTNETDEV} up
-[[ -z "$(ip addr | grep ${NETDEVIP}/24 | grep ${HOSTNETDEV})" ]] && \\
-    ip addr add ${NETDEVIP}/24 dev ${HOSTNETDEV}
-
-echo "Adding route to ${GUESTIP}..."
-[[ -z "$(ip route | grep ${GUESTIP} | grep ${HOSTNETDEV})" ]] && \\
-    ip route add ${GUESTIP} via ${GUESTIP} dev ${HOSTNETDEV}
-"""
-
-"""
-echo "Deleting route..."
-ip route flush dev ${HOSTNETDEV}
-
-echo "Bringing down TAP device..."
-ip link set ${TAPDEV} down
-
-if [[ ${HASVLAN} -ne 0 ]]; then
-    echo "Removing VLAN..."
-    ip link delete ${HOSTNETDEV}
-fi
-
-echo -n "Deleting TAP device ${TAPDEV}... "
-sleep 1 && tunctl -d ${TAPDEV}
-"""
-
 def startNetwork(network):
     template_1 = """
 TAPDEV_%(I)i=tap${IID}_%(I)i
@@ -323,7 +262,7 @@ sudo tunctl -d ${TAPDEV_%(I)i}
         output.append(template_2 % {'I' : i})
     return '\n'.join(output)
 
-def qemuCmd(iid, network, arch, endianness, cate):
+def qemuCmd(iid, network, arch, endianness):
     if arch == "mips":
         qemuEnvVars = ""
         qemuDisk = "-drive if=ide,format=raw,file=${IMAGE}"
@@ -340,26 +279,15 @@ def qemuCmd(iid, network, arch, endianness, cate):
     else:
         raise Exception("Unsupported architecture")
 
-    if cate == 'run':
-        return QEMURUNTEMPLATE % {'IID': iid,
-                                  'ARCHEND' : arch + endianness,
-                                  'START_NET' : startNetwork(network),
-                                  'STOP_NET' : stopNetwork(network),
-                                  'QEMU_DISK' : qemuDisk,
-                                  'QEMU_NETWORK' : qemuNetworkConfig(arch, network),
-                                  'QEMU_ENV_VARS' : qemuEnvVars}
-    elif cate == 'terminate':
-        return QEMUTERMINATETEMPLATE % {'IID': iid,
-                                        'ARCHEND' : arch + endianness,
-                                        'START_NET' : startNetwork(network),
-                                        'STOP_NET' : stopNetwork(network),
-                                        'QEMU_DISK' : qemuDisk,
-                                        'QEMU_NETWORK' : qemuNetworkConfig(arch, network),
-                                        'QEMU_ENV_VARS' : qemuEnvVars}
-    else:
-        raise Exception("Unknown script type")
+    return QEMUCMDTEMPLATE % {'IID': iid,
+                              'ARCHEND' : arch + endianness,
+                              'START_NET' : startNetwork(network),
+                              'STOP_NET' : stopNetwork(network),
+                              'QEMU_DISK' : qemuDisk,
+                              'QEMU_NETWORK' : qemuNetworkConfig(arch, network),
+                              'QEMU_ENV_VARS' : qemuEnvVars}
 
-def process(infile, iid, arch, endianness=None, makeQemuCmd=False, outfile_run=None, outfile_terminate=None):
+def process(infile, iid, arch, endianness=None, makeQemuCmd=False, outfile=None):
     brifs = []
     vlans = []
     data = open(infile).read()
@@ -403,19 +331,15 @@ def process(infile, iid, arch, endianness=None, makeQemuCmd=False, outfile_run=N
                 print("duplicate ip address for interface: ", n)
 
     if makeQemuCmd:
-        qemuCommandRun = qemuCmd(iid, pruned_network, arch, endianness, 'run')
-        qemuCommandTerminate = qemuCmd(iid, pruned_network, arch, endianness, 'terminate')
-    if qemuCommandRun and qemuCommandTerminate:
+        qemuCommandLine = qemuCmd(iid, pruned_network, arch, endianness)
+    if qemuCommandLine:
         success = True
-    if outfile_run and outfile_terminate:
-        with open(outfile_run, "w") as out:
-            out.write(qemuCommandRun)
-        os.chmod(outfile_run, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-        with open(outfile_terminate, "w") as out:
-            out.write(qemuCommandTerminate)
-        os.chmod(outfile_terminate, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+    if outfile:
+        with open(outfile, "w") as out:
+            out.write(qemuCommandLine)
+        os.chmod(outfile, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
     else:
-        print(qemuCommandRun)
+        print(qemuCommandLine)
 
     return success
 
@@ -465,12 +389,11 @@ def main():
     if not infile and iid:
         infile = "%s/%i/qemu.initial.serial.log" % (VMDIR, iid)
     if outfile and iid:
-        outfile_run = """%s/%i/run.sh""" % (VMDIR, iid)
-        outfile_terminate = """%s/%i/terminate.sh""" % (VMDIR, iid)
+        outfile = """%s/%i/run.sh""" % (VMDIR, iid)
     if debug:
         print("processing %i" % iid)
     if infile:
-        process(infile, iid, arch, endianness, makeQemuCmd, outfile_run, outfile_terminate)
+        process(infile, iid, arch, endianness, makeQemuCmd, outfile)
 
 if __name__ == "__main__":
     main()
