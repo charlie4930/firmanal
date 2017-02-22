@@ -1,18 +1,22 @@
+Only in afl-2.39b: afl-clang
+Only in afl-2.39b: afl-clang++
+Only in afl-2.39b: afl-g++
+Only in afl-2.39b: afl-gcc
 diff -aur afl-2.39b.orig/Makefile afl-2.39b/Makefile
 --- afl-2.39b.orig/Makefile	2017-01-15 09:50:54.000000000 +0800
-+++ afl-2.39b/Makefile	2017-02-11 17:12:05.606666665 +0800
++++ afl-2.39b/Makefile	2017-02-22 09:56:29.816666667 +0800
 @@ -122,7 +122,7 @@
  	rm -f $${DESTDIR}$(BIN_PATH)/afl-plot.sh
  	install -m 755 $(PROGS) $(SH_PROGS) $${DESTDIR}$(BIN_PATH)
  	rm -f $${DESTDIR}$(BIN_PATH)/afl-as
 -	if [ -f afl-qemu-trace ]; then install -m 755 afl-qemu-trace $${DESTDIR}$(BIN_PATH); fi
-+	if [ -f afl-qemu-trace ]; then install -m 755 afl-qemu-trace-* $${DESTDIR}$(BIN_PATH); fi
++	if [ -f afl-qemu-trace ]; then install -m 755 afl-qemu-trace $${DESTDIR}$(BIN_PATH); cp -r afl-qemu-trace-* $${DESTDIR}$(BIN_PATH); fi
  ifndef AFL_TRACE_PC
  	if [ -f afl-clang-fast -a -f afl-llvm-pass.so -a -f afl-llvm-rt.o ]; then set -e; install -m 755 afl-clang-fast $${DESTDIR}$(BIN_PATH); ln -sf afl-clang-fast $${DESTDIR}$(BIN_PATH)/afl-clang-fast++; install -m 755 afl-llvm-pass.so afl-llvm-rt.o $${DESTDIR}$(HELPER_PATH); fi
  else
 diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/build_qemu_support.sh
 --- afl-2.39b.orig/qemu_mode/build_qemu_support.sh	2016-03-08 15:10:20.000000000 +0800
-+++ afl-2.39b/qemu_mode/build_qemu_support.sh	2017-02-11 17:12:45.979999997 +0800
++++ afl-2.39b/qemu_mode/build_qemu_support.sh	2017-02-22 09:48:46.449999999 +0800
 @@ -1,4 +1,4 @@
 -#!/bin/sh
 +#!/bin/bash
@@ -92,21 +96,22 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
  
  make || exit 1
  
-@@ -147,50 +137,46 @@
+@@ -147,50 +137,47 @@
  
  echo "[*] Copying binary..."
  
 -cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
 +for CPU_TARGET in "aarch64" "alpha" "armeb" "arm" "cris" "i386" "m68k" "microblazeel" "microblaze" "mips64el" "mips64" "mipsel" "mips" "mipsn32el" "mipsn32" "or32" "ppc64abi32" "ppc64le" "ppc64" "ppc" "s390x" "sh4eb" "sh4" "sparc32plus" "sparc64" "sparc" "tilegx" "x86_64"
 +do
-+  cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace-${CPU_TARGET}" || exit 1
++  mkdir "../../afl-qemu-trace-${CPU_TARGET}"
++  cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace-${CPU_TARGET}/afl-qemu-trace" || exit 1
 +done
 +
-+cp -f "../../afl-qemu-trace-$(uname -m)" "../../afl-qemu-trace" || exit 1
++cp -f "../../afl-qemu-trace-$(uname -m)/afl-qemu-trace" "../../afl-qemu-trace" || exit 1
  
  cd ..
 -ls -l ../afl-qemu-trace || exit 1
-+ls -l ../afl-qemu-trace-* || exit 1
++ls -l ../afl-qemu-trace* || exit 1
  
  echo "[+] Successfully created '../afl-qemu-trace'."
  
@@ -169,7 +174,7 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
  exit 0
 diff -aur afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h
 --- afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h	2016-02-21 06:22:07.000000000 +0800
-+++ afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h	2017-02-11 17:12:05.606666665 +0800
++++ afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h	2017-02-22 08:50:16.203333325 +0800
 @@ -49,7 +49,7 @@
  #define AFL_QEMU_CPU_SNIPPET2 do { \
      if(tb->pc == afl_entry_point) { \
@@ -227,9 +232,10 @@ diff -aur afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h afl-2.39b/qemu_mod
  
    }
  
+Only in afl-2.39b/qemu_mode/patches: qemu-2.8.0.diff
 diff -aur afl-2.39b.orig/types.h afl-2.39b/types.h
 --- afl-2.39b.orig/types.h	2016-08-03 02:35:04.000000000 +0800
-+++ afl-2.39b/types.h	2017-02-11 17:12:05.606666665 +0800
++++ afl-2.39b/types.h	2017-02-22 08:50:16.203333325 +0800
 @@ -76,7 +76,9 @@
  #define MEM_BARRIER() \
    asm volatile("" ::: "memory")
