@@ -1,10 +1,69 @@
-Only in afl-2.39b: afl-clang
-Only in afl-2.39b: afl-clang++
-Only in afl-2.39b: afl-g++
-Only in afl-2.39b: afl-gcc
+diff -aur afl-2.39b.orig/afl-fuzz.c afl-2.39b/afl-fuzz.c
+--- afl-2.39b.orig/afl-fuzz.c	2016-11-27 10:10:23.000000000 +0800
++++ afl-2.39b/afl-fuzz.c	2017-02-25 04:10:25.113333333 +0800
+@@ -89,7 +89,8 @@
+           *in_bitmap,                 /* Input bitmap                     */
+           *doc_path,                  /* Path to documentation dir        */
+           *target_path,               /* Path to target binary            */
+-          *orig_cmdline;              /* Original command line            */
++          *orig_cmdline,              /* Original command line            */
++          *qemu_lib_path;             /* Path to the lib of QEMU guest    */
+ 
+ EXP_ST u32 exec_tmout = EXEC_TIMEOUT; /* Configurable exec timeout (ms)   */
+ EXP_ST u64 mem_limit = MEM_LIMIT;     /* Memory cap for child (MB)        */
+@@ -7521,13 +7522,15 @@
+ 
+ static char** get_qemu_argv(u8* own_loc, char** argv, int argc) {
+ 
+-  char** new_argv = ck_alloc(sizeof(char*) * (argc + 4));
++  char** new_argv = ck_alloc(sizeof(char*) * (argc + 6));
+   u8 *tmp, *cp, *rsl, *own_copy;
+ 
+-  memcpy(new_argv + 3, argv + 1, sizeof(char*) * argc);
++  memcpy(new_argv + 5, argv + 1, sizeof(char*) * argc);
+ 
+-  new_argv[2] = target_path;
+-  new_argv[1] = "--";
++  new_argv[4] = target_path;
++  new_argv[3] = "--";
++  new_argv[2] = qemu_lib_path;
++  new_argv[1] = "-L";
+ 
+   /* Now we need to actually find the QEMU binary to put in argv[0]. */
+ 
+@@ -7638,7 +7641,7 @@
+   gettimeofday(&tv, &tz);
+   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
+ 
+-  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:Q")) > 0)
++  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QL:")) > 0)
+ 
+     switch (opt) {
+ 
+@@ -7806,12 +7809,20 @@
+ 
+         break;
+ 
++      case 'L': /* specify the library path for QEMU mode */
++
++        if (qemu_lib_path) FATAL("Multiple -L options not supported");
++        qemu_lib_path = optarg;
++        break;
++
+       default:
+ 
+         usage(argv[0]);
+ 
+     }
+ 
++  if (!qemu_mode && qemu_lib_path) FATAL("-L must be used with -Q");
++
+   if (optind == argc || !in_dir || !out_dir) usage(argv[0]);
+ 
+   setup_signal_handlers();
 diff -aur afl-2.39b.orig/Makefile afl-2.39b/Makefile
 --- afl-2.39b.orig/Makefile	2017-01-15 09:50:54.000000000 +0800
-+++ afl-2.39b/Makefile	2017-02-22 09:56:29.816666667 +0800
++++ afl-2.39b/Makefile	2017-02-25 02:56:41.573333333 +0800
 @@ -122,7 +122,7 @@
  	rm -f $${DESTDIR}$(BIN_PATH)/afl-plot.sh
  	install -m 755 $(PROGS) $(SH_PROGS) $${DESTDIR}$(BIN_PATH)
@@ -16,7 +75,7 @@ diff -aur afl-2.39b.orig/Makefile afl-2.39b/Makefile
  else
 diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/build_qemu_support.sh
 --- afl-2.39b.orig/qemu_mode/build_qemu_support.sh	2016-03-08 15:10:20.000000000 +0800
-+++ afl-2.39b/qemu_mode/build_qemu_support.sh	2017-02-22 09:48:46.449999999 +0800
++++ afl-2.39b/qemu_mode/build_qemu_support.sh	2017-02-25 02:56:41.573333333 +0800
 @@ -1,4 +1,4 @@
 -#!/bin/sh
 +#!/bin/bash
@@ -174,7 +233,7 @@ diff -aur afl-2.39b.orig/qemu_mode/build_qemu_support.sh afl-2.39b/qemu_mode/bui
  exit 0
 diff -aur afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h
 --- afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h	2016-02-21 06:22:07.000000000 +0800
-+++ afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h	2017-02-22 08:50:16.203333325 +0800
++++ afl-2.39b/qemu_mode/patches/afl-qemu-cpu-inl.h	2017-02-25 02:56:41.573333333 +0800
 @@ -49,7 +49,7 @@
  #define AFL_QEMU_CPU_SNIPPET2 do { \
      if(tb->pc == afl_entry_point) { \
@@ -232,10 +291,9 @@ diff -aur afl-2.39b.orig/qemu_mode/patches/afl-qemu-cpu-inl.h afl-2.39b/qemu_mod
  
    }
  
-Only in afl-2.39b/qemu_mode/patches: qemu-2.8.0.diff
 diff -aur afl-2.39b.orig/types.h afl-2.39b/types.h
 --- afl-2.39b.orig/types.h	2016-08-03 02:35:04.000000000 +0800
-+++ afl-2.39b/types.h	2017-02-22 08:50:16.203333325 +0800
++++ afl-2.39b/types.h	2017-02-25 02:56:41.573333333 +0800
 @@ -76,7 +76,9 @@
  #define MEM_BARRIER() \
    asm volatile("" ::: "memory")
