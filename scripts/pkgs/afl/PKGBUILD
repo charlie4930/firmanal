@@ -9,7 +9,7 @@ pkgdesc='Security-oriented fuzzer using compile-time instrumentation and genetic
 url='http://lcamtuf.coredump.cx/afl/'
 arch=('i686' 'x86_64')
 license=('Apache')
-depends=('glibc' 'bash' 'clang' 'llvm')
+depends=('glibc' 'bash')
 optdepends=('gcc: gcc instrumentation support'
             'gnuplot: graph plotting support')
 makedepends=('gcc' 'wget' 'python' 'python2' 'libtool' 'automake' 'autoconf' 'coreutils' 'bison')
@@ -21,7 +21,7 @@ source=(${pkgname}-${pkgver}.tgz::http://lcamtuf.coredump.cx/${pkgname}/releases
         ${pkgname}-${pkgver}.diff)
 sha512sums=('0df37fc8dea65d4130bc0fc8aaa23525bde4832c7202efb78ebe740d661546adee575b48fb94d851ef26293ca28a6ff818ab1dfd643c8e688aceb520e11229d0'
             '2ff7222ef250e4804f466f95952b6e5951c5e801d37fe9a126c00254f1837e199d9c30e5610ef5fb7b379a1e354b812a656d76d51b0f7a182960c5fafbfe7ac9'
-            '93fbba12286cd3094f9daec5c5e66e2b87b52b500eedd640643ecf741313cc29ef56e6846180116537af1758ea99c9403113b01959883924a58e0e43fbd81fcb')
+            '1dfb8fea09ea8273e9bd07c80942626ff5e72974034b6b5bfe3bc2e46d30db37e9322afff629d08fa0d55fbf0a9fb26e9e00eb14adf6749c10219906b92e0c53')
 
 prepare() {
   rm -f $(readlink ${pkgname}-${pkgver}.tgz)
@@ -31,11 +31,10 @@ prepare() {
 
 build() {
   cd ${pkgname}-${pkgver}
-  export CC=clang
-  export CXX=clang++
+  export CC=gcc
+  export CXX=g++
   export AFL_NO_X86=1
   make PREFIX=/usr
-  make -C llvm_mode PREFIX=/usr
   cd qemu_mode
   ./build_qemu_support.sh
   cd ..
