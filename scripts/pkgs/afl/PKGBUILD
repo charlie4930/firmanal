@@ -5,10 +5,10 @@
 pkgname=afl
 pkgver=2.39b
 pkgrel=1
-pkgdesc='Security-oriented fuzzer using compile-time instrumentation and genetic algorithms'
+pkgdesc='Security-oriented fuzzer using compile-time instrumentation and genetic algorithms with network addon'
 url='http://lcamtuf.coredump.cx/afl/'
 arch=('i686' 'x86_64')
-license=('Apache')
+license=('Apache' 'GPL')
 depends=('glibc' 'bash')
 optdepends=('gcc: gcc instrumentation support'
             'gnuplot: graph plotting support')
@@ -21,7 +21,7 @@ source=(${pkgname}-${pkgver}.tgz::http://lcamtuf.coredump.cx/${pkgname}/releases
         ${pkgname}-${pkgver}.diff)
 sha512sums=('0df37fc8dea65d4130bc0fc8aaa23525bde4832c7202efb78ebe740d661546adee575b48fb94d851ef26293ca28a6ff818ab1dfd643c8e688aceb520e11229d0'
             '2ff7222ef250e4804f466f95952b6e5951c5e801d37fe9a126c00254f1837e199d9c30e5610ef5fb7b379a1e354b812a656d76d51b0f7a182960c5fafbfe7ac9'
-            '1dfb8fea09ea8273e9bd07c80942626ff5e72974034b6b5bfe3bc2e46d30db37e9322afff629d08fa0d55fbf0a9fb26e9e00eb14adf6749c10219906b92e0c53')
+            '0500c0022290dac01eb00c688713f0d44d2eff038a0aa1f57eb81b8e9089385d5889d09432e0284587429895cfec34e3e4f9ce39dac0762d375234104420b8a5')
 
 prepare() {
   rm -f $(readlink ${pkgname}-${pkgver}.tgz)
