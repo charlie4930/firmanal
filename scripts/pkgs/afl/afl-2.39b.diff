@@ -920,8 +920,6 @@ diff -aur afl-2.39b.orig/afl-fuzz.c afl-2.39b/afl-fuzz.c
 +
 +  if (!qemu_mode && qemu_lib_path) FATAL("-L must be used with -Q");
  
-+  if (!qemu_mode && qemu_lib_path) FATAL("-L must be used with -Q");
-+
    if (optind == argc || !in_dir || !out_dir) usage(argv[0]);
  
 diff -aur afl-2.39b.orig/docs/README afl-2.39b/docs/README
