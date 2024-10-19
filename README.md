@@ -10,6 +10,7 @@
 
 # Introduction
 
+
 Firmanal is an automated firmware analysis tool based on [Firmadyne](https://github.com/firmadyne/firmadyne),
 and it currently only works on Arch Linux.
 
